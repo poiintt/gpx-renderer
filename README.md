@@ -1,4 +1,4 @@
-# gpx-render
+# gpx-renderer
 
 ```bash
 npm i
