@@ -1,48 +1,7 @@
 <script lang="ts">
-  import { gpx } from "@tmcw/togeojson";
-  import { geoMercator } from "d3-geo";
-  import type { Position } from "geojson";
-
-  import { humanFileSize } from "./utils";
+  import Route from "./Route.svelte";
 
   let files: FileList;
-  const width = 800;
-  const height = 600;
-
-  function isPositionArray(
-    position: Position | Position[] | Position[][] | Position[][][]
-  ): position is Position[] {
-    const first = (position as Position[])[0];
-    return typeof first[0] === "number" && typeof first[1] === "number";
-  }
-
-  async function getPath(file: File): Promise<string> {
-    const xml = await file.text();
-    const document = new DOMParser().parseFromString(xml, "text/xml");
-    const featureCollection = gpx(document);
-
-    const geometry = featureCollection.features[0].geometry;
-    if ("coordinates" in geometry) {
-      const coordinates = geometry.coordinates;
-
-      if (isPositionArray(coordinates)) {
-        const padding = 20;
-        const geoProjection = geoMercator().fitExtent(
-          [
-            [padding, padding],
-            [width - padding * 2, height - padding * 2],
-          ],
-          featureCollection
-        );
-
-        const mappedCoordinates = coordinates.map((cord) =>
-          geoProjection([cord[0], cord[1]])
-        );
-        return "M " + mappedCoordinates.join(" L ");
-      }
-    }
-    return "";
-  }
 </script>
 
 <label for="route">Upload a GPX file:</label>
@@ -51,23 +10,6 @@
 {#if files}
   <h2>Selected files:</h2>
   {#each Array.from(files) as file}
-    <p>{file.name} ({humanFileSize(file.size)})</p>
-
-    {#await getPath(file)}
-      <p>...loading map</p>
-    {:then d}
-      <svg {width} {height}>
-        <path
-          {d}
-          fill="none"
-          stroke="red"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-miterlimit="4"
-        />
-      </svg>
-    {:catch error}
-      <p style="color: red">{error.message}</p>
-    {/await}
+    <Route {file} />
   {/each}
 {/if}
