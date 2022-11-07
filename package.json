@@ -13,6 +13,7 @@
     "@sveltejs/vite-plugin-svelte": "^1.1.0",
     "@tsconfig/svelte": "^3.0.0",
     "@types/d3-geo": "^3.0.2",
+    "@types/geojson": "^7946.0.10",
     "svelte": "^3.52.0",
     "svelte-check": "^2.9.2",
     "svelte-preprocess": "^4.10.7",
