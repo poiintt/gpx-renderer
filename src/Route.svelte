@@ -5,9 +5,11 @@
 
   import { humanFileSize } from "./utils";
 
-  export let file: File;
+  export let file: File = undefined;
   const width = 800;
   const height = 600;
+  let d = "M ";
+  let drawProgress = 0;
 
   function isPositionArray(
     position: Position | Position[] | Position[][] | Position[][][]
@@ -16,7 +18,12 @@
     return typeof first[0] === "number" && typeof first[1] === "number";
   }
 
-  async function getPath(file: File): Promise<string> {
+  function getProgress(value: number, total: number) {
+    const result = (value + 1) / total;
+    return (result * 100) | 0;
+  }
+
+  async function getPath(file: File) {
     const xml = await file.text();
     const document = new DOMParser().parseFromString(xml, "text/xml");
     const featureCollection = gpx(document);
@@ -34,33 +41,46 @@
           ],
           featureCollection
         );
-
         const mappedCoordinates = coordinates.map((cord) =>
           geoProjection([cord[0], cord[1]])
         );
-        return "M " + mappedCoordinates.join(" L ");
+
+        const coordinateCount = mappedCoordinates.length;
+        let offset = (coordinateCount / 1000) | 0;
+        offset = offset > 5 ? offset : 5;
+
+        function extendPath(i: number) {
+          drawProgress = getProgress(i, coordinateCount);
+          if (i < coordinateCount) {
+            const coordinates = mappedCoordinates.slice(i, i + offset);
+            d += ` ${coordinates}`;
+
+            i += offset;
+            setTimeout(() => {
+              extendPath(i);
+            });
+          }
+        }
+
+        extendPath(0);
       }
     }
-    return "";
   }
+
+  getPath(file);
 </script>
 
-{#if file}
-  <p>{file.name} ({humanFileSize(file.size)})</p>
-  {#await getPath(file)}
-    <p>...loading map</p>
-  {:then d}
-    <svg {width} {height}>
-      <path
-        {d}
-        fill="none"
-        stroke="red"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-miterlimit="4"
-      />
-    </svg>
-  {:catch error}
-    <p style="color: red">{error.message}</p>
-  {/await}
+<p>{file.name} ({humanFileSize(file.size)})</p>
+{#if drawProgress < 100}
+  <p>{drawProgress}%</p>
 {/if}
+<svg {width} {height}>
+  <path
+    {d}
+    fill="none"
+    stroke="green"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-miterlimit="4"
+  />
+</svg>
